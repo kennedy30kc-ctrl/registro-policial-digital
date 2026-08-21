@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuadrante — Registro de Novedades</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --navy-deep:#0C1E33;
+    --navy:#132C48;
+    --navy-panel:#1B3A5C;
+    --olive:#454E3A;
+    --brass:#C9A227;
+    --brass-soft:#E4C86A;
+    --paper:#F4EFE2;
+    --paper-line:#DDD3B8;
+    --ink:#20242B;
+    --muted:#93A3B8;
+    --muted-dim:#5C6C82;
+    --red:#FF3B3B;
+    --blue-light:#3E7BFF;
+    --green-ok:#4C9A6A;
+    --amber:#E8A93A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--navy-deep);
+    color:#EAF0F7;
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  .serif{ font-family:'Newsreader', serif; }
+
+  /* ---- patrol light sync bar ---- */
+  .sync-bar{
+    display:none;
+    position:sticky; top:0; z-index:50;
+    padding:10px 16px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    font-weight:600;
+    letter-spacing:.02em;
+    color:#fff;
+    text-align:center;
+    background: linear-gradient(90deg, var(--red), var(--blue-light), var(--red));
+    background-size:300% 100%;
+    animation: torreta 1.4s linear infinite;
+    box-shadow: 0 0 22px rgba(255,59,59,.55);
+  }
+  .sync-bar.show{ display:block; }
+  @keyframes torreta{
+    0%{ background-position:0% 50%; }
+    100%{ background-position:300% 50%; }
+  }
+
+  .app{ max-width:560px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+
+  header.topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 18px 14px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .badge{
+    width:38px;height:38px;
+    flex:none;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .badge.lg{ width:64px; height:64px; }
+  .badge svg{ width:100%; height:100%; overflow:visible; }
+  .siren-l{ animation: siren-l 1s steps(1) infinite; transform-origin:center; }
+  .siren-r{ animation: siren-r 1s steps(1) infinite; transform-origin:center; }
+  @keyframes siren-l{
+    0%,49%{ fill:var(--red); filter:drop-shadow(0 0 4px var(--red)); }
+    50%,100%{ fill:#5a1a1a; filter:none; }
+  }
+  @keyframes siren-r{
+    0%,49%{ fill:#0d2a5a; filter:none; }
+    50%,100%{ fill:var(--blue-light); filter:drop-shadow(0 0 4px var(--blue-light)); }
+  }
+  .brandline{ display:flex; gap:10px; align-items:center; }
+  .brandline .t1{ font-size:10.5px; letter-spacing:.14em; color:var(--muted); text-transform:uppercase; }
+  .brandline .t2{ font-family:'Newsreader',serif; font-weight:600; font-size:17px; color:#fff; margin-top:1px; }
+
+  .toggle-conn{
+    display:flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted);
+    cursor:pointer; user-select:none;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+    padding:6px 10px; border-radius:20px;
+  }
+  .dot{ width:8px;height:8px;border-radius:50%; background:var(--green-ok); box-shadow:0 0 8px var(--green-ok); }
+  .toggle-conn.off .dot{ background:var(--red); box-shadow:0 0 8px var(--red); }
+
+  main{ flex:1; padding:20px 18px 90px; }
+
+  .eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.12em; color:var(--brass-soft); text-transform:uppercase; margin-bottom:6px;}
+  h1.page{ font-family:'Newsreader',serif; font-size:26px; font-weight:600; margin:0 0 6px; color:#fff; }
+  .sub{ color:var(--muted); font-size:14px; margin-bottom:22px; line-height:1.5; }
+
+  .card{
+    background:var(--navy-panel);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;
+    padding:18px;
+    margin-bottom:14px;
+  }
+  .card.pending{
+    border-color: rgba(255,59,59,.5);
+    box-shadow: 0 0 0 1px rgba(255,59,59,.2), 0 0 18px rgba(255,59,59,.12);
+  }
+  .card.warn{
+    border-color: rgba(232,169,58,.55);
+  }
+
+  .role-grid{ display:flex; flex-direction:column; gap:12px; margin-top:18px; }
+  .role-btn{
+    display:flex; align-items:center; gap:14px;
+    background:var(--navy-panel); border:1px solid rgba(255,255,255,.1);
+    border-radius:14px; padding:16px 16px; cursor:pointer;
+    text-align:left; color:#fff; font-family:'Inter',sans-serif;
+    transition:border-color .15s, background .15s;
+  }
+  .role-btn:hover{ border-color:var(--brass); background:#1F4064; }
+  .role-icon{ width:42px;height:42px;border-radius:10px; background:rgba(201,162,39,.14); display:flex;align-items:center;justify-content:center; font-size:20px; flex:none;}
+  .role-btn .rt1{ font-weight:600; font-size:15px; }
+  .role-btn .rt2{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--brass); color:#1a1400; font-weight:700; font-size:14.5px;
+    border:none; border-radius:10px; padding:13px 18px; cursor:pointer;
+    width:100%;
+    font-family:'Inter',sans-serif;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:hover{ filter:brightness(1.08); }
+  .btn:active{ transform:scale(.98); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn.ghost{
+    background:transparent; color:#fff; border:1px solid rgba(255,255,255,.22); font-weight:600;
+  }
+  .btn.ghost:hover{ border-color:var(--brass); }
+  .btn.sm{ width:auto; padding:9px 14px; font-size:13px; }
+  .btn.danger{ background:var(--red); color:#fff; }
+  .btn.mic{ background:var(--navy); color:var(--brass-soft); border:1px solid var(--brass); }
+  .btn.mic.rec{ background:var(--red); color:#fff; border-color:var(--red); animation:pulse 1s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
+
+  label.field-label{ display:block; font-size:12px; color:var(--muted); margin:14px 0 6px; font-family:'IBM Plex Mono',monospace; letter-spacing:.03em; }
+  select, textarea, input[type=text]{
+    width:100%; background:var(--navy); border:1px solid rgba(255,255,255,.15); border-radius:9px;
+    color:#fff; padding:11px 12px; font-family:'Inter',sans-serif; font-size:14.5px;
+  }
+  textarea{ min-height:110px; resize:vertical; line-height:1.5; }
+  select{ appearance:none; }
+
+  .row{ display:flex; gap:10px; }
+  .row > *{ flex:1; }
+
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600;
+    padding:5px 10px; border-radius:20px; letter-spacing:.02em;
+  }
+  .chip.ok{ background:rgba(76,154,106,.15); color:var(--green-ok); border:1px solid rgba(76,154,106,.35); }
+  .chip.warn{ background:rgba(232,169,58,.15); color:var(--amber); border:1px solid rgba(232,169,58,.35); }
+  .chip.pending{ background:rgba(255,59,59,.15); color:#ff8080; border:1px solid rgba(255,59,59,.35); }
+
+  .loc-box{
+    background:var(--navy); border:1px dashed rgba(255,255,255,.2); border-radius:10px;
+    padding:12px; margin-top:8px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--muted);
+  }
+  .loc-box.got{ color:#cfe3ff; border-style:solid; border-color:rgba(62,123,255,.4); }
+
+  .thumbs{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .thumbs img{ width:64px;height:64px;object-fit:cover;border-radius:8px; border:1px solid rgba(255,255,255,.15); }
+
+  .novedad-item{
+    background:var(--navy); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:14px;
+    margin-bottom:10px; cursor:pointer;
+  }
+  .novedad-item:hover{ border-color:var(--brass); }
+  .nov-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .nov-hora{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
+  .nov-tipo{ font-weight:600; font-size:14.5px; margin-top:3px; }
+  .nov-preview{ font-size:13px; color:var(--muted); margin-top:6px; line-height:1.4;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+
+  .empty{ text-align:center; padding:40px 20px; color:var(--muted); }
+  .empty .ic{ font-size:34px; margin-bottom:10px; }
+
+  .ai-box{
+    background:linear-gradient(180deg, rgba(201,162,39,.08), rgba(201,162,39,.02));
+    border:1px solid rgba(201,162,39,.35);
+    border-radius:10px; padding:14px; margin-top:12px;
+  }
+  .ai-box .lab{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--brass-soft); letter-spacing:.06em; margin-bottom:8px; text-transform:uppercase; }
+  .ai-box textarea{ background:var(--navy-deep); }
+
+  .spinner{
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid rgba(0,0,0,.25); border-top-color:#1a1400;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .bottom-nav{
+    position:fixed; bottom:0; left:0; right:0;
+    background:var(--navy); border-top:1px solid rgba(255,255,255,.1);
+    display:flex; justify-content:center; z-index:40;
+  }
+  .bottom-nav-inner{ max-width:560px; width:100%; display:flex; padding:10px 18px; gap:10px; }
+
+  .back-link{ color:var(--muted); font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; margin-bottom:14px; }
+  .back-link:hover{ color:#fff; }
+
+  /* ---- Acta / printable ---- */
+  .acta{
+    background:var(--paper); color:var(--ink); border-radius:10px; padding:26px 22px;
+    font-family:'Newsreader',serif;
+  }
+  .acta .seal{
+    width:64px;height:64px;border-radius:50%;border:2px dashed var(--olive);
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;color:var(--olive);
+    letter-spacing:.02em; margin:0 auto 12px; line-height:1.2;
+  }
+  .acta h2{ text-align:center; font-size:19px; margin:0 0 4px; }
+  .acta .actasub{ text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color:#6b6250; margin-bottom:18px; }
+  .acta .entry{ border-top:1px solid var(--paper-line); padding:14px 0; }
+  .acta .entry .eh{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:11px; color:#6b6250; margin-bottom:6px;}
+  .acta .entry p{ font-size:14.5px; line-height:1.65; margin:0; }
+  .acta .foot{ margin-top:22px; padding-top:14px; border-top:1px solid var(--paper-line); text-align:center; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#6b6250; line-height:1.6; }
+
+  .stat-row{ display:flex; gap:10px; margin-bottom:18px; }
+  .stat{ flex:1; background:var(--navy-panel); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px; text-align:center; }
+  .stat .n{ font-family:'Newsreader',serif; font-size:26px; font-weight:600; color:#fff; }
+  .stat .l{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
+
+  .access-note{
+    font-size:12.5px; color:var(--muted); background:rgba(255,255,255,.04);
+    border-left:3px solid var(--brass); padding:10px 12px; border-radius:6px; margin-bottom:16px; line-height:1.5;
+  }
+
+  @page{ size: letter; margin: 1.6cm; }
+  @media print{
+    body *{ visibility:hidden; }
+    .acta, .acta *{ visibility:visible; }
+    .acta{ position:absolute; left:0; top:0; width:100%; background:#fff; padding:0; }
+    .acta .entry{ break-inside: avoid; page-break-inside: avoid; }
+    .acta .seal, .acta h2, .acta .actasub{ break-after: avoid; page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="sync-bar mono" id="syncBar">⬤ SIN SEÑAL — LAS NOVEDADES SE GUARDAN EN EL TELÉFONO Y SE SINCRONIZAN AL RECUPERAR CONEXIÓN</div>
+<div class="app">
+  <header class="topbar" id="topbar" style="display:none;">
+    <div class="brandline">
+      <div class="badge">
+        <svg viewBox="0 0 64 64">
+          <rect class="siren-l" x="13" y="1" width="16" height="7" rx="3"/>
+          <rect class="siren-r" x="35" y="1" width="16" height="7" rx="3"/>
+          <path d="M32 12 L52 18 V32 C52 46 43 54 32 58 C21 54 12 46 12 32 V18 Z" fill="#16314F" stroke="#C9A227" stroke-width="2"/>
+          <polygon points="32.0,24.0 34.1,30.1 40.6,30.2 35.4,34.1 37.3,40.3 32.0,36.6 26.7,40.3 28.6,34.1 23.4,30.2 29.9,30.1" fill="#E4C86A"/>
+        </svg>
+      </div>
+      <div>
+        <div class="t1">Cuadrante Digital</div>
+        <div class="t2" id="roleLabel">—</div>
+      </div>
+    </div>
+    <div class="toggle-conn" id="connToggle" onclick="toggleConn()">
+      <span class="dot"></span><span id="connLabel">EN LÍNEA</span>
+    </div>
+  </header>
+  <main id="main"></main>
+  <div class="bottom-nav" id="bottomNav" style="display:none;">
+    <div class="bottom-nav-inner" id="bottomNavInner"></div>
+  </div>
+</div>
+
+<script>
+const state = {
+  screen: 'login',
+  role: null,
+  online: true,
+  cuadrante: {
+    numero: 1,
+    comisaria: 'Comisaría Palo Verde',
+    patrulla: 'Patrulla P-12',
+    matricula: 'AB123CD',
+    sector: 'Sector Palo Verde',
+    funcionarios: [
+      { nombre: 'Torres, José', cargo: 'Jefe de Brigada', placa: 'PNB-01123' },
+      { nombre: 'Pérez, Rosa', cargo: 'Agente', placa: 'PNB-04521' },
+      { nombre: 'Sánchez, Miguel', cargo: 'Agente', placa: 'PNB-04788' },
+    ],
+  },
+  novedades: [],
+  currentDraft: null,
+  detalleId: null,
+  aiLoading: false,
+};
+let idCounter = 1;
+
+function el(id){ return document.getElementById(id); }
+function fmtHora(d){ return d.toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'}); }
+function fmtFecha(d){ return d.toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'}); }
+
+function toggleConn(){
+  state.online = !state.online;
+  el('syncBar').classList.toggle('show', !state.online && state.novedades.some(n=>n.pendienteSync));
+  updateConnUI();
+  if(state.online){
+    // al "recuperar señal": sincroniza pendientes y formaliza las que quedaron sin IA
+    state.novedades.forEach(n=>{
+      if(n.pendienteSync){
+        n.pendienteSync = false;
+        if(!n.textoFormal && !n.aiError){ formalizarNovedad(n.id, true); }
+      }
+    });
+  }
+  render();
+}
+function updateConnUI(){
+  const t = el('connToggle');
+  t.classList.toggle('off', !state.online);
+  el('connLabel').textContent = state.online ? 'EN LÍNEA' : 'SIN SEÑAL';
+  const anyPending = state.novedades.some(n=>n.pendienteSync);
+  el('syncBar').classList.toggle('show', anyPending);
+}
+
+function goLogin(){ state.screen='login'; state.role=null; render(); }
+function enterAs(role){
+  state.role = role;
+  state.screen = role==='funcionario' ? 'home' : (role==='jefe' ? 'jefe' : 'admin');
+  render();
+}
+
+function nuevaNovedad(){
+  state.currentDraft = {
+    id: idCounter++,
+    hora: new Date(),
+    tipo: 'patrullaje',
+    texto: '',
+    testigos: [],
+    testigoInput: '',
+    testigoRol: 'Testigo',
+    resultado: '',
+    textoFormal: '',
+    ubicacion: null,
+    fotos: [],
+    pendienteSync: false,
+    aiError: null,
+  };
+  state.screen = 'nueva';
+  render();
+}
+
+function agregarTestigo(){
+  const d = state.currentDraft;
+  const nombre = (d.testigoInput || '').trim();
+  if(!nombre) return;
+  d.testigos.push({ nombre, rol: d.testigoRol || 'Testigo' });
+  d.testigoInput = '';
+  render();
+}
+function quitarTestigo(i){
+  state.currentDraft.testigos.splice(i,1);
+  render();
+}
+
+function guardarNovedad(){
+  const d = state.currentDraft;
+  if(!d.texto.trim()){ alert('Falta describir qué ocurrió antes de guardar.'); return; }
+  d.pendienteSync = !state.online;
+  state.novedades.unshift(d);
+  state.currentDraft = null;
+  state.screen = 'home';
+  updateConnUI();
+  render();
+}
+
+function capturarUbicacion(){
+  const d = state.currentDraft;
+  if(!navigator.geolocation){
+    d.ubicacion = { error: 'Geolocalización no disponible en este navegador.' };
+    render(); return;
+  }
+  d.ubicacion = { loading:true };
+  render();
+  navigator.geolocation.getCurrentPosition(pos=>{
+    d.ubicacion = {
+      lat: pos.coords.latitude.toFixed(6),
+      lng: pos.coords.longitude.toFixed(6),
+      accuracy: Math.round(pos.coords.accuracy),
+    };
+    render();
+  }, err=>{
+    d.ubicacion = { error: 'No se pudo obtener la ubicación (' + err.message + ').' };
+    render();
+  }, { enableHighAccuracy:true, timeout:10000 });
+}
+
+let recognition = null;
+let recognizing = false;
+let dictadoTarget = null;
+function toggleDictado(campo){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ alert('El dictado por voz no está disponible en este navegador. Puedes usar el micrófono del teclado de tu celular para dictar en el campo de texto.'); return; }
+  if(recognizing){ recognition.stop(); return; }
+  recognition = new SR();
+  recognition.lang = 'es-VE';
+  recognition.continuous = true;
+  recognition.interimResults = false;
+  recognition.onresult = (e)=>{
+    let txt = '';
+    for(let i=e.resultIndex;i<e.results.length;i++){ txt += e.results[i][0].transcript; }
+    state.currentDraft[campo] = (state.currentDraft[campo] ? state.currentDraft[campo] + ' ' : '') + txt;
+    render();
+  };
+  recognition.onend = ()=>{ recognizing=false; dictadoTarget=null; render(); };
+  recognition.onerror = ()=>{ recognizing=false; dictadoTarget=null; render(); };
+  recognition.start();
+  recognizing = true;
+  dictadoTarget = campo;
+  render();
+}
+
+function onFotos(input){
+  const files = Array.from(input.files || []);
+  files.forEach(f=>{
+    const url = URL.createObjectURL(f);
+    state.currentDraft.fotos.push(url);
+  });
+  render();
+}
+
+async function formalizarNovedad(id, silent){
+  const nov = id === (state.currentDraft && state.currentDraft.id) ? state.currentDraft : state.novedades.find(n=>n.id===id);
+  if(!nov || !nov.texto.trim()) return;
+  if(!silent){ state.aiLoading = true; render(); }
+  try{
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 700,
+        system: "Eres un funcionario instructor experto en redacción de actas policiales venezolanas. Tu única tarea es transformar el relato coloquial de un funcionario en la redacción formal, técnica y jurídico-policial que se usa en un acta policial real en Venezuela — no un simple resumen más ordenado, sino el registro tal como lo escribiría un instructor con años de experiencia redactando actas. Se te da la fecha y hora EXACTAS en que se generó el registro: úsalas siempre como ancla del acta (ej. 'siendo aproximadamente las [hora] horas del día [fecha], encontrándonos en labores de patrullaje preventivo por el sector...') — nunca le pidas al funcionario que las mencione, ni las omitas, ni inventes una distinta. Usa además fórmulas propias del acta policial venezolana (adapta según corresponda, no copies literalmente): 'fuimos abordados/alertados por un ciudadano quien manifestó...', 'nos trasladamos hasta el lugar antes señalado', 'procedimos a...', 'se entrevistó al ciudadano, quien manifestó de manera voluntaria que...', 'no se evidenció la comisión de hecho punible alguno', 'se dejó constancia de lo actuado mediante la presente acta'. Si se te dan personas identificadas con su rol (testigo, víctima, imputado, ciudadano entrevistado), menciónalas explícitamente con ese rol en el texto. Sustituye SIEMPRE el lenguaje coloquial por su equivalente formal y elimina juicios de valor subjetivos ('malandro', 'tipo raro'), describiendo solo lo observable de forma objetiva. Reglas estrictas: 1) Conserva EXACTAMENTE los hechos, horas, nombres, lugares, descripciones físicas y datos mencionados por el funcionario, sin inventar ni omitir ninguno. 2) No agregues calificaciones jurídicas, delitos, artículos legales ni conclusiones que el funcionario no haya expresado — solo eleva el registro del lenguaje, no el contenido. 3) No inventes datos que no te hayan dado. 4) Redacta siempre en tono objetivo, técnico e impersonal, en tercera persona del plural, sin ninguna palabra coloquial. 5) Responde ÚNICAMENTE con el texto del acta, sin explicaciones ni comentarios adicionales.",
+        messages: [{ role: "user", content:
+          "Fecha y hora exactas del registro: " + fmtHora(nov.hora) + " horas del " + fmtFecha(nov.hora) +
+          "\nTipo de novedad: " + nov.tipo +
+          "\nRelato del funcionario: " + nov.texto +
+          (nov.testigos && nov.testigos.length ? "\nPersonas identificadas: " + nov.testigos.map(t=>t.nombre+' ('+t.rol+')').join(', ') : "") +
+          (nov.resultado ? "\nResultado / a qué se llegó: " + nov.resultado : "")
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = (data.content || []).map(b=>b.text||'').join('\n').trim();
+    if(text){ nov.textoFormal = text; nov.aiError = null; }
+    else { nov.aiError = 'La IA no devolvió texto. Intenta de nuevo.'; }
+  }catch(e){
+    nov.aiError = 'No se pudo contactar el servicio de IA (' + e.message + ').';
+  }
+  if(!silent){ state.aiLoading = false; }
+  render();
+}
+
+function abrirEditarCuadrante(){
+  state.cuadranteDraft = {
+    numero: state.cuadrante.numero,
+    comisaria: state.cuadrante.comisaria,
+    patrulla: state.cuadrante.patrulla,
+    matricula: state.cuadrante.matricula,
+    sector: state.cuadrante.sector,
+    funcionarios: state.cuadrante.funcionarios.map(f=>({...f})),
+    fNombre: '', fCargo: 'Agente', fPlaca: '',
+  };
+  state.screen = 'editarCuadrante';
+  render();
+}
+function agregarFuncionarioDraft(){
+  const d = state.cuadranteDraft;
+  const nombre = (d.fNombre || '').trim();
+  if(!nombre) return;
+  d.funcionarios.push({ nombre, cargo: d.fCargo || 'Agente', placa: (d.fPlaca||'').trim() });
+  d.fNombre = ''; d.fPlaca = '';
+  render();
+}
+function quitarFuncionarioDraft(i){
+  state.cuadranteDraft.funcionarios.splice(i,1);
+  render();
+}
+function guardarCuadrante(){
+  const d = state.cuadranteDraft;
+  if(!d.patrulla.trim() || !d.funcionarios.length){ alert('Falta la patrulla o al menos un funcionario.'); return; }
+  state.cuadrante = {
+    numero: d.numero,
+    comisaria: d.comisaria.trim(),
+    patrulla: d.patrulla.trim(),
+    matricula: d.matricula.trim(),
+    sector: d.sector.trim(),
+    funcionarios: d.funcionarios,
+  };
+  state.screen = 'jefe';
+  render();
+}
+
+function estadoNovedad(n){
+  const faltantes = [];
+  if(!n.texto.trim()) faltantes.push('descripción de la novedad');
+  if(!n.ubicacion || n.ubicacion.error) faltantes.push('ubicación');
+  else if(n.ubicacion.accuracy && n.ubicacion.accuracy > 40) faltantes.push('ubicación más precisa (señal GPS débil)');
+  return faltantes;
+}
+
+// ---------------- RENDER ----------------
+function render(){
+  const showChrome = state.screen !== 'login';
+  el('topbar').style.display = showChrome ? 'flex' : 'none';
+  el('bottomNav').style.display = showChrome ? 'flex' : 'none';
+  el('roleLabel').textContent = state.role==='funcionario' ? ('Cuadrante ' + state.cuadrante.numero) : (state.role==='jefe' ? 'Jefatura' : 'Administración');
+  updateConnUI();
+
+  const m = el('main');
+  const bn = el('bottomNavInner');
+  bn.innerHTML = '';
+
+  if(state.screen === 'login') return renderLogin(m);
+  if(state.screen === 'home') return renderHome(m, bn);
+  if(state.screen === 'nueva') return renderNueva(m, bn);
+  if(state.screen === 'detalle') return renderDetalle(m, bn);
+  if(state.screen === 'cierre') return renderCierre(m, bn);
+  if(state.screen === 'jefe') return renderJefe(m, bn);
+  if(state.screen === 'editarCuadrante') return renderEditarCuadrante(m, bn);
+  if(state.screen === 'admin') return renderAdmin(m, bn);
+}
+
+function renderLogin(m){
+  m.innerHTML = `
+    <div style="padding-top:8vh; text-align:center;">
+      <div class="badge lg" style="margin:0 auto 14px;">
+        <svg viewBox="0 0 64 64">
+          <rect class="siren-l" x="13" y="1" width="16" height="7" rx="3"/>
+          <rect class="siren-r" x="35" y="1" width="16" height="7" rx="3"/>
+          <path d="M32 12 L52 18 V32 C52 46 43 54 32 58 C21 54 12 46 12 32 V18 Z" fill="#16314F" stroke="#C9A227" stroke-width="2"/>
+          <polygon points="32.0,24.0 34.1,30.1 40.6,30.2 35.4,34.1 37.3,40.3 32.0,36.6 26.7,40.3 28.6,34.1 23.4,30.2 29.9,30.1" fill="#E4C86A"/>
+        </svg>
+      </div>
+      <div class="eyebrow" style="justify-content:center;">Prototipo — demo interna</div>
+      <h1 class="page" style="font-size:28px;">Cuadrante Digital</h1>
+      <div class="sub">Registro de novedades policiales, geolocalizado y en lenguaje formal automático.</div>
+    </div>
+    <div class="role-grid">
+      <div class="role-btn" onclick="enterAs('funcionario')">
+        <div class="role-icon">🚓</div>
+        <div><div class="rt1">Entrar como funcionario</div><div class="rt2">Registra novedades de tu cuadrante</div></div>
+      </div>
+      <div class="role-btn" onclick="enterAs('jefe')">
+        <div class="role-icon">🎖️</div>
+        <div><div class="rt1">Entrar como jefe de comisaría</div><div class="rt2">Ve todos los expedientes de tu estación</div></div>
+      </div>
+      <div class="role-btn" onclick="enterAs('admin')">
+        <div class="role-icon">🔒</div>
+        <div><div class="rt1">Entrar como administrador del sistema</div><div class="rt2">Solo activa o desactiva el servicio — sin ver datos</div></div>
+      </div>
+    </div>
+    <div class="access-note" style="margin-top:18px;">Esta es una demo funcional para ver la estructura y el flujo. No hay usuarios reales ni datos guardados de forma permanente — todo vive en esta sesión.</div>
+  `;
+}
+
+function renderHome(m, bn){
+  const pendientes = state.novedades.filter(n=>n.pendienteSync);
+  const c = state.cuadrante;
+  m.innerHTML = `
+    <div class="eyebrow">${c.sector} · ${c.patrulla}</div>
+    <h1 class="page">Turno en curso</h1>
+    <div class="sub">${c.funcionarios.map(f=>f.nombre+' ('+f.cargo+')').join(' · ')}</div>
+    <div class="access-note" style="margin-bottom:16px;">Cuadrante ${c.numero}, patrulla y compañeros asignados por el jefe de comisaría para este turno.</div>
+
+    ${pendientes.length ? `
+      <div class="card pending">
+        <span class="chip pending">⬤ ${pendientes.length} pendiente${pendientes.length>1?'s':''} por sincronizar</span>
+        <div class="sub" style="margin:8px 0 0;">Se subirán solas en cuanto haya señal. No se pierden.</div>
+      </div>
+    ` : ''}
+
+    <div class="stat-row">
+      <div class="stat"><div class="n">${state.novedades.length}</div><div class="l">Novedades</div></div>
+      <div class="stat"><div class="n">${pendientes.length}</div><div class="l">Sin subir</div></div>
+      <div class="stat"><div class="n">${state.novedades.filter(n=>estadoNovedad(n).length===0).length}</div><div class="l">Completas</div></div>
+    </div>
+
+    ${state.novedades.length === 0 ? `
+      <div class="empty"><div class="ic">🗒️</div>No hay novedades registradas todavía en este turno.</div>
+    ` : state.novedades.map(n=>{
+      const faltan = estadoNovedad(n);
+      return `
+      <div class="novedad-item" onclick="verDetalle(${n.id})">
+        <div class="nov-top">
+          <div>
+            <div class="nov-hora mono">${fmtHora(n.hora)} · ${n.tipo}</div>
+            <div class="nov-tipo">${(n.textoFormal ? n.textoFormal : n.texto).slice(0,46) || 'Sin descripción'}${(n.textoFormal||n.texto).length>46?'…':''}</div>
+          </div>
+          <div style="text-align:right;">
+            ${n.pendienteSync ? '<span class="chip pending">pendiente</span>' : '<span class="chip ok">sincronizada</span>'}
+          </div>
+        </div>
+        ${faltan.length ? `<div style="margin-top:8px;"><span class="chip warn">⚠ falta: ${faltan.join(', ')}</span></div>` : ''}
+        <div class="nov-preview">${n.texto}</div>
+      </div>`;
+    }).join('')}
+  `;
+  bn.innerHTML = `
+    <button class="btn" onclick="nuevaNovedad()">+ Nueva novedad</button>
+    <button class="btn ghost sm" onclick="state.screen='cierre'; render();">Cierre de turno</button>
+    <button class="btn ghost sm" onclick="goLogin()">Salir</button>
+  `;
+}
+
+function renderNueva(m, bn){
+  const d = state.currentDraft;
+  m.innerHTML = `
+    <div class="back-link" onclick="state.screen='home'; state.currentDraft=null; render();">← Cancelar</div>
+    <div class="eyebrow">${fmtHora(d.hora)} · ${fmtFecha(d.hora)}</div>
+    <h1 class="page">Nueva novedad</h1>
+
+    <label class="field-label">Tipo de novedad</label>
+    <select onchange="state.currentDraft.tipo=this.value;">
+      <option value="patrullaje" ${d.tipo==='patrullaje'?'selected':''}>Patrullaje / llamado de vecino</option>
+      <option value="aprehension" ${d.tipo==='aprehension'?'selected':''}>Aprehensión en flagrancia</option>
+      <option value="hallazgo" ${d.tipo==='hallazgo'?'selected':''}>Hallazgo de evidencia</option>
+      <option value="otro" ${d.tipo==='otro'?'selected':''}>Otro</option>
+    </select>
+
+    <label class="field-label">¿Qué pasó? — cuéntalo con tus palabras</label>
+    <textarea placeholder="Ej: nos trasladamos a la calle 26, el vecino Julio nos dijo que había alguien sospechoso rondando en bicicleta..." oninput="state.currentDraft.texto=this.value;">${d.texto}</textarea>
+    <div class="row" style="margin-top:8px;">
+      <button class="btn mic ${recognizing&&dictadoTarget==='texto'?'rec':''} sm" onclick="toggleDictado('texto')">${recognizing&&dictadoTarget==='texto'? '● Grabando… toca para detener' : '🎙 Dictar por voz'}</button>
+    </div>
+
+    <div class="access-note" style="margin-top:16px;">Si hubo ciudadanos involucrados, identifícalos plenamente: nombre completo, cédula si la tienes, y si es testigo, víctima o imputado.</div>
+    <label class="field-label">Personas involucradas (opcional)</label>
+    <div class="row">
+      <input type="text" placeholder="Nombre completo" value="${d.testigoInput||''}"
+        oninput="state.currentDraft.testigoInput=this.value;"
+        onkeydown="if(event.key==='Enter'){event.preventDefault(); agregarTestigo();}">
+      <select onchange="state.currentDraft.testigoRol=this.value;" style="flex:none; width:auto;">
+        ${['Testigo','Víctima','Imputado','Ciudadano entrevistado'].map(r=>`<option value="${r}" ${d.testigoRol===r?'selected':''}>${r}</option>`).join('')}
+      </select>
+      <button class="btn ghost sm" style="flex:none; width:auto;" onclick="agregarTestigo()">+ Agregar</button>
+    </div>
+    ${d.testigos.length ? `
+      <div class="thumbs" style="align-items:center;">
+        ${d.testigos.map((t,i)=>`<span class="chip ok" style="cursor:pointer;" onclick="quitarTestigo(${i})" title="Quitar">${t.nombre} — ${t.rol} ✕</span>`).join('')}
+      </div>` : ''}
+
+    <label class="field-label">¿Cómo se resolvió o a qué se llegó?</label>
+    <textarea placeholder="Ej: se verificó que era un vecino comprando medicamentos, no se encontró novedad delictiva, se retiró el cuadrante..." oninput="state.currentDraft.resultado=this.value;" style="min-height:70px;">${d.resultado||''}</textarea>
+    <div class="row" style="margin-top:8px;">
+      <button class="btn mic ${recognizing&&dictadoTarget==='resultado'?'rec':''} sm" onclick="toggleDictado('resultado')">${recognizing&&dictadoTarget==='resultado'? '● Grabando… toca para detener' : '🎙 Dictar por voz'}</button>
+    </div>
+
+    <label class="field-label">Ubicación</label>
+    ${!d.ubicacion ? `
+      <button class="btn ghost sm" onclick="capturarUbicacion()">📍 Obtener ubicación exacta</button>
+    ` : d.ubicacion.loading ? `
+      <div class="loc-box">Obteniendo ubicación por GPS…</div>
+    ` : d.ubicacion.error ? `
+      <div class="loc-box">⚠ ${d.ubicacion.error}</div>
+      <button class="btn ghost sm" style="margin-top:8px;" onclick="capturarUbicacion()">Reintentar</button>
+    ` : `
+      <div class="loc-box got mono">
+        lat ${d.ubicacion.lat} · lng ${d.ubicacion.lng}<br>
+        precisión ±${d.ubicacion.accuracy} m ${d.ubicacion.accuracy>40 ? '— ⚠ señal débil, intenta de nuevo si puedes' : '— ✓ precisa'}
+      </div>
+    `}
+
+    <label class="field-label">Fotografías</label>
+    <div class="row">
+      <label class="btn ghost sm" style="flex:1; cursor:pointer;">
+        📷 Tomar foto ahora
+        <input type="file" accept="image/*" capture="environment" multiple onchange="onFotos(this)" style="display:none;">
+      </label>
+      <label class="btn ghost sm" style="flex:1; cursor:pointer;">
+        🖼 Subir del teléfono
+        <input type="file" accept="image/*" multiple onchange="onFotos(this)" style="display:none;">
+      </label>
+    </div>
+    <div class="thumbs">${d.fotos.map(u=>`<img src="${u}">`).join('')}</div>
+
+    <div class="ai-box">
+      <div class="lab">Redacción formal (IA)</div>
+      ${!d.textoFormal && !state.aiLoading ? `
+        <button class="btn sm" ${!d.texto.trim()?'disabled':''} onclick="formalizarNovedad(${d.id})">✨ Formalizar con IA</button>
+        <div class="sub" style="margin:8px 0 0; font-size:12.5px;">Convierte tu relato en redacción policial formal, conservando exactamente los hechos.</div>
+      ` : state.aiLoading ? `
+        <div style="display:flex; align-items:center; gap:8px; color:var(--brass-soft); font-size:13.5px;"><span class="spinner"></span> Formalizando redacción…</div>
+      ` : `
+        <textarea oninput="state.currentDraft.textoFormal=this.value;">${d.textoFormal}</textarea>
+        <div class="sub" style="margin:8px 0 0; font-size:12px;">Puedes editar el texto formal antes de guardar. Tú eres responsable del contenido final.</div>
+      `}
+      ${d.aiError ? `<div class="sub" style="color:#ff8080; margin-top:8px;">${d.aiError}</div>` : ''}
+    </div>
+  `;
+  bn.innerHTML = `<button class="btn" onclick="guardarNovedad()">Guardar novedad</button>`;
+}
+
+function renderDetalle(m, bn){
+  const n = state.novedades.find(x=>x.id===state.detalleId);
+  if(!n){ state.screen='home'; return render(); }
+  const faltan = estadoNovedad(n);
+  m.innerHTML = `
+    <div class="back-link" onclick="state.screen='home'; render();">← Volver</div>
+    <div class="eyebrow">${fmtHora(n.hora)} · ${n.tipo}</div>
+    <h1 class="page">Expediente</h1>
+    ${n.pendienteSync ? `<span class="chip pending">⬤ pendiente por sincronizar</span>` : `<span class="chip ok">sincronizada</span>`}
+    ${faltan.length ? `<div class="card warn" style="margin-top:12px;"><span class="chip warn">⚠ Expediente incompleto</span><div class="sub" style="margin-top:8px;">Falta: ${faltan.join(', ')}</div></div>` : ''}
+
+    <div class="card" style="margin-top:14px;">
+      <div class="eyebrow">Relato original</div>
+      <div class="sub" style="color:#cfd8e3;">${n.texto || '—'}</div>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Redacción formal</div>
+      <div class="sub" style="color:#cfd8e3;">${n.textoFormal || 'Aún no formalizada.'}</div>
+    </div>
+    ${(n.testigos && n.testigos.length) || n.resultado ? `
+    <div class="card">
+      ${n.testigos && n.testigos.length ? `<div class="eyebrow">Personas involucradas</div><div class="sub" style="color:#cfd8e3;">${n.testigos.map(t=>t.nombre+' — '+t.rol).join(', ')}</div>` : ''}
+      ${n.resultado ? `<div class="eyebrow" style="margin-top:${n.testigos&&n.testigos.length?'12px':'0'};">Resultado</div><div class="sub" style="color:#cfd8e3;">${n.resultado}</div>` : ''}
+    </div>` : ''}
+    ${n.ubicacion && !n.ubicacion.error ? `
+    <div class="card">
+      <div class="eyebrow">Ubicación</div>
+      <div class="mono sub">lat ${n.ubicacion.lat} · lng ${n.ubicacion.lng} · ±${n.ubicacion.accuracy}m</div>
+    </div>` : ''}
+    ${n.fotos.length ? `<div class="card"><div class="eyebrow">Fotografías</div><div class="thumbs">${n.fotos.map(u=>`<img src="${u}">`).join('')}</div></div>` : ''}
+  `;
+  bn.innerHTML = state.role==='funcionario' ? `<button class="btn ghost" onclick="state.screen='home'; render();">Volver al turno</button>` : `<button class="btn ghost" onclick="state.screen=(state.role==='jefe'?'jefe':'home'); render();">Volver</button>`;
+}
+
+function renderCierre(m, bn){
+  const c = state.cuadrante;
+  const hoy = new Date();
+  m.innerHTML = `
+    <div class="back-link" onclick="state.screen='home'; render();">← Volver</div>
+    <h1 class="page">Cierre de turno</h1>
+    <div class="sub">Documento consolidado, listo para revisión del jefe e impresión.</div>
+    <div class="acta">
+      <div class="seal">SELLO<br>DEMO</div>
+      <h2>Acta de Novedades del Turno</h2>
+      <div class="actasub">${c.comisaria} · ${fmtFecha(hoy)}</div>
+
+      <p style="font-size:14px; line-height:1.75; text-align:justify; margin:16px 0;">
+        En la ciudad correspondiente a la jurisdicción de la ${c.comisaria}, siendo la fecha antes indicada, quienes suscriben la presente acta, funcionarios adscritos al cuadrante de patrullaje N.° ${c.numero}, correspondiente al sector ${c.sector}, y a bordo de la unidad radiopatrullera identificada como ${c.patrulla}${c.matricula ? ' (matrícula ' + c.matricula + ')' : ''}, dejan constancia de las novedades atendidas durante el desarrollo del turno de guardia, las cuales se detallan a continuación.
+      </p>
+
+      <div style="margin:14px 0 18px;">
+        <div class="actasub" style="text-align:left; margin-bottom:8px;">Integrantes del cuadrante</div>
+        ${c.funcionarios.map(f=>`
+          <div style="font-size:13.5px; padding:4px 0; border-bottom:1px dotted var(--paper-line);">
+            <strong>${f.cargo}</strong> ${f.nombre}${f.placa ? ' — Placa N.° ' + f.placa : ''}
+          </div>`).join('')}
+      </div>
+
+      <div class="actasub" style="text-align:left; margin-bottom:4px;">Relación de novedades atendidas</div>
+      ${state.novedades.length===0 ? `<p style="text-align:center; color:#8a806a;">Sin novedades registradas en este turno.</p>` :
+        state.novedades.slice().reverse().map((n,idx)=>`
+        <div class="entry">
+          <div class="eh"><span>Novedad N.° ${state.novedades.length-idx} — ${fmtHora(n.hora)} — ${n.tipo}</span><span>${n.pendienteSync?'⬤ pendiente':'sincronizada'}</span></div>
+          <p>${n.textoFormal || n.texto}</p>
+          ${n.testigos && n.testigos.length ? `<p style="margin-top:8px; font-size:12.5px; color:#6b6250;"><em>Personas involucradas: ${n.testigos.map(t=>t.nombre+' ('+t.rol+')').join(', ')}</em></p>` : ''}
+          ${n.resultado ? `<p style="margin-top:4px; font-size:12.5px; color:#6b6250;"><em>Resultado: ${n.resultado}</em></p>` : ''}
+          ${n.ubicacion && !n.ubicacion.error && !n.ubicacion.loading ? `<p style="margin-top:4px; font-size:12.5px; color:#6b6250;" class="mono"><em>Ubicación: lat ${n.ubicacion.lat}, lng ${n.ubicacion.lng} (±${n.ubicacion.accuracy} m)</em></p>` : `<p style="margin-top:4px; font-size:12.5px; color:#b23a3a;"><em>⚠ Sin ubicación registrada</em></p>`}
+          ${n.fotos && n.fotos.length ? `<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">${n.fotos.map(u=>`<img src="${u}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--paper-line);">`).join('')}</div>` : `<p style="margin-top:4px; font-size:12px; color:#8a806a;"><em>Sin fotografías anexas</em></p>`}
+        </div>
+      `).join('')}
+
+      <p style="font-size:13.5px; line-height:1.7; text-align:justify; margin:18px 0 6px;">
+        No habiendo más novedades que hacer constar, se da por concluida la presente acta, la cual firman los funcionarios actuantes en señal de conformidad con lo aquí expuesto.
+      </p>
+      <div style="margin-top:22px; display:flex; flex-wrap:wrap; gap:22px 26px;">
+        ${c.funcionarios.map(f=>`
+          <div style="flex:1; min-width:150px; text-align:center; font-size:12px; color:#6b6250;">
+            <div style="border-top:1px solid var(--ink); margin-bottom:4px; padding-top:4px;">${f.nombre}</div>
+            ${f.cargo}${f.placa ? ' · ' + f.placa : ''}
+          </div>`).join('')}
+        <div style="flex:1; min-width:150px; text-align:center; font-size:12px; color:#6b6250;">
+          <div style="border-top:1px solid var(--ink); margin-bottom:4px; padding-top:4px;">Jefe de Comisaría</div>
+          Revisión y conformidad
+        </div>
+      </div>
+      <div class="foot">
+        Formato validado por Abg. Kennedy Contreras — INPREABOGADO N.° 191.818 — Colegio de Abogados del Estado Barinas — C.I. V-16.575.620<br>
+        Estructura conforme al Código Orgánico Procesal Penal · Documento generado por Cuadrante Digital (demo)
+      </div>
+    </div>
+  `;
+  bn.innerHTML = `<button class="btn" onclick="window.print()">🖨 Imprimir / exportar</button>`;
+}
+
+function renderJefe(m, bn){
+  const pendientes = state.novedades.filter(n=>n.pendienteSync).length;
+  const incompletas = state.novedades.filter(n=>estadoNovedad(n).length>0).length;
+  m.innerHTML = `
+    <div class="eyebrow">${state.cuadrante.sector}</div>
+    <h1 class="page">Panel del jefe</h1>
+    <div class="access-note">Ves todos los expedientes generados por los cuadrantes de tu comisaría. Ningún jefe de otra comisaría puede ver esto, y otros cuadrantes de esta misma comisaría no pueden ver expedientes que no generaron ellos.</div>
+    <div class="card">
+      <div class="nov-top">
+        <div>
+          <div class="nov-tipo">Cuadrante ${state.cuadrante.numero} — ${state.cuadrante.patrulla}</div>
+          <div class="sub" style="margin:4px 0 0;">${state.cuadrante.funcionarios.map(f=>f.nombre+' ('+f.cargo+')').join(' · ')}</div>
+        </div>
+        <button class="btn ghost sm" onclick="abrirEditarCuadrante()">Editar</button>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="n">${state.novedades.length}</div><div class="l">Total</div></div>
+      <div class="stat"><div class="n">${pendientes}</div><div class="l">Sin sincronizar</div></div>
+      <div class="stat"><div class="n">${incompletas}</div><div class="l">Incompletas</div></div>
+    </div>
+    ${state.novedades.length === 0 ? `<div class="empty"><div class="ic">🎖️</div>Aún no hay novedades registradas por el cuadrante.</div>` :
+    state.novedades.map(n=>`
+      <div class="novedad-item" onclick="verDetalle(${n.id})">
+        <div class="nov-top">
+          <div>
+            <div class="nov-hora mono">${fmtHora(n.hora)} · ${n.tipo} · Cuadrante ${state.cuadrante.numero}</div>
+            <div class="nov-tipo">${(n.textoFormal||n.texto).slice(0,46)}${(n.textoFormal||n.texto).length>46?'…':''}</div>
+          </div>
+          ${n.pendienteSync ? '<span class="chip pending">pendiente</span>' : '<span class="chip ok">ok</span>'}
+        </div>
+      </div>
+    `).join('')}
+  `;
+  bn.innerHTML = `
+    <button class="btn" onclick="state.screen='cierre'; render();">Ver documento de cierre</button>
+    <button class="btn ghost sm" onclick="goLogin()">Salir</button>
+  `;
+}
+
+function renderEditarCuadrante(m, bn){
+  const d = state.cuadranteDraft;
+  m.innerHTML = `
+    <div class="back-link" onclick="state.screen='jefe'; render();">← Cancelar</div>
+    <h1 class="page">Datos del cuadrante</h1>
+    <div class="sub">El jefe asigna estos datos al inicio de cada turno. Así el registro de cada novedad, y el acta final, quedan siempre con la información correcta y completa de cada funcionario.</div>
+
+    <label class="field-label">Comisaría</label>
+    <input type="text" value="${d.comisaria}" oninput="state.cuadranteDraft.comisaria=this.value;">
+
+    <div class="row">
+      <div>
+        <label class="field-label">N.° de cuadrante</label>
+        <input type="text" value="${d.numero}" oninput="state.cuadranteDraft.numero=this.value;">
+      </div>
+      <div>
+        <label class="field-label">Sector / zona</label>
+        <input type="text" value="${d.sector}" oninput="state.cuadranteDraft.sector=this.value;">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label class="field-label">Patrulla asignada</label>
+        <input type="text" value="${d.patrulla}" oninput="state.cuadranteDraft.patrulla=this.value;">
+      </div>
+      <div>
+        <label class="field-label">Matrícula de la unidad</label>
+        <input type="text" value="${d.matricula}" oninput="state.cuadranteDraft.matricula=this.value;">
+      </div>
+    </div>
+
+    <label class="field-label">Funcionarios asignados — nombre, cargo y placa</label>
+    <input type="text" placeholder="Nombre y apellido" value="${d.fNombre||''}" style="margin-bottom:8px;"
+      oninput="state.cuadranteDraft.fNombre=this.value;">
+    <div class="row">
+      <select onchange="state.cuadranteDraft.fCargo=this.value;">
+        ${['Comisario','Jefe de Brigada','Cabo Primero','Cabo Segundo','Agente'].map(c=>`<option value="${c}" ${d.fCargo===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <input type="text" placeholder="N.° de placa" value="${d.fPlaca||''}"
+        oninput="state.cuadranteDraft.fPlaca=this.value;"
+        onkeydown="if(event.key==='Enter'){event.preventDefault(); agregarFuncionarioDraft();}">
+    </div>
+    <button class="btn ghost sm" style="margin-top:8px;" onclick="agregarFuncionarioDraft()">+ Agregar funcionario</button>
+    <div style="margin-top:10px;">
+      ${d.funcionarios.map((f,i)=>`
+        <div class="novedad-item" style="padding:10px 12px; margin-bottom:8px; cursor:default;">
+          <div class="nov-top">
+            <div>
+              <div class="nov-tipo" style="font-size:13.5px;">${f.nombre}</div>
+              <div class="nov-hora mono">${f.cargo}${f.placa ? ' · Placa ' + f.placa : ''}</div>
+            </div>
+            <span class="chip pending" style="cursor:pointer;" onclick="quitarFuncionarioDraft(${i})">Quitar</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  bn.innerHTML = `<button class="btn" onclick="guardarCuadrante()">Guardar datos del cuadrante</button>`;
+}
+
+function renderAdmin(m, bn){
+  m.innerHTML = `
+    <div class="eyebrow">Vista del administrador del sistema</div>
+    <h1 class="page">Panel de activación</h1>
+    <div class="access-note">Esto es todo lo que ve el administrador del software: el estado de pago de cada comisaría. Ningún expediente, novedad, nombre ni fotografía es visible desde aquí — esos datos están cifrados y la llave la tiene el jefe de cada comisaría.</div>
+    <div class="card">
+      <div class="nov-top">
+        <div>
+          <div class="nov-tipo">Comisaría — ${state.cuadrante.sector}</div>
+          <div class="sub" style="margin:4px 0 0;">Piloto gratuito · próximo cobro: —</div>
+        </div>
+        <span class="chip ${state.stationActive!==false ? 'ok' : 'pending'}">${state.stationActive!==false ? 'ACTIVA' : 'DESACTIVADA'}</span>
+      </div>
+      <div class="row" style="margin-top:14px;">
+        <button class="btn ${state.stationActive===false?'':'danger'} sm" onclick="state.stationActive = !(state.stationActive!==false); render();">
+          ${state.stationActive!==false ? 'Desactivar acceso' : 'Reactivar acceso'}
+        </button>
+      </div>
+    </div>
+  `;
+  bn.innerHTML = `<button class="btn ghost" onclick="goLogin()">Salir</button>`;
+}
+
+render();
+</script>
+</body>
+</html>
