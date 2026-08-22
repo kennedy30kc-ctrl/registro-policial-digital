@@ -307,6 +307,37 @@ const state = {
   aiLoading: false,
 };
 let idCounter = 1;
+const STORAGE_KEY = 'cuadrante-digital-demo-v1';
+const MAX_NOVEDADES_GUARDADAS = 6; // para no llenar el almacenamiento del navegador en la demo
+
+function guardarEnDisco(){
+  try{
+    const payload = {
+      cuadrante: state.cuadrante,
+      novedades: state.novedades.slice(0, MAX_NOVEDADES_GUARDADAS),
+      idCounter,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }catch(e){
+    // Sin almacenamiento disponible en este entorno (ej. vista previa dentro del chat) — la demo sigue funcionando solo en memoria.
+  }
+}
+function cargarDeDisco(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const payload = JSON.parse(raw);
+    if(payload.cuadrante) state.cuadrante = payload.cuadrante;
+    if(payload.novedades) state.novedades = payload.novedades.map(n=>({...n, hora: new Date(n.hora)}));
+    if(payload.idCounter) idCounter = payload.idCounter;
+  }catch(e){ /* se ignora y arranca vacío */ }
+}
+function borrarDatosDemo(){
+  if(!confirm('¿Borrar los expedientes guardados de esta demo? Esta acción no se puede deshacer.')) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  state.novedades = [];
+  render();
+}
 
 function el(id){ return document.getElementById(id); }
 function fmtHora(d){ return d.toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'}); }
@@ -385,6 +416,7 @@ function guardarNovedad(){
   state.screen = 'home';
   updateConnUI();
   render();
+  guardarEnDisco();
 }
 
 function capturarUbicacion(){
@@ -447,10 +479,14 @@ function toggleDictado(campo){
 function onFotos(input){
   const files = Array.from(input.files || []);
   files.forEach(f=>{
-    const url = URL.createObjectURL(f);
-    state.currentDraft.fotos.push(url);
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      state.currentDraft.fotos.push(reader.result);
+      render();
+      guardarEnDisco();
+    };
+    reader.readAsDataURL(f);
   });
-  render();
 }
 
 async function formalizarNovedad(id, silent){
@@ -523,6 +559,7 @@ function guardarCuadrante(){
   };
   state.screen = 'jefe';
   render();
+  guardarEnDisco();
 }
 
 function estadoNovedad(n){
@@ -939,10 +976,13 @@ function renderAdmin(m, bn){
         </button>
       </div>
     </div>
+    <div class="access-note">Los expedientes de esta demo quedan guardados en este navegador (hasta ${MAX_NOVEDADES_GUARDADAS} a la vez) para que puedas mostrarla sin que se borre. Si quieres empezar de cero antes de mostrársela a otro jefe, usa el botón de abajo.</div>
+    <button class="btn ghost sm" onclick="borrarDatosDemo()">Borrar expedientes guardados de la demo</button>
   `;
   bn.innerHTML = `<button class="btn ghost" onclick="goLogin()">Salir</button>`;
 }
 
+cargarDeDisco();
 render();
 </script>
 </body>
