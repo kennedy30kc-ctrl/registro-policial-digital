@@ -378,6 +378,7 @@ function quitarTestigo(i){
 function guardarNovedad(){
   const d = state.currentDraft;
   if(!d.texto.trim()){ alert('Falta describir qué ocurrió antes de guardar.'); return; }
+  dictadoManualStop = true; if(recognizing) recognition.stop();
   d.pendienteSync = !state.online;
   state.novedades.unshift(d);
   state.currentDraft = null;
@@ -410,10 +411,12 @@ function capturarUbicacion(){
 let recognition = null;
 let recognizing = false;
 let dictadoTarget = null;
+let dictadoManualStop = false;
 function toggleDictado(campo){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ alert('El dictado por voz no está disponible en este navegador. Puedes usar el micrófono del teclado de tu celular para dictar en el campo de texto.'); return; }
-  if(recognizing){ recognition.stop(); return; }
+  if(recognizing){ dictadoManualStop = true; recognition.stop(); return; }
+  dictadoManualStop = false;
   recognition = new SR();
   recognition.lang = 'es-VE';
   recognition.continuous = true;
@@ -424,8 +427,17 @@ function toggleDictado(campo){
     state.currentDraft[campo] = (state.currentDraft[campo] ? state.currentDraft[campo] + ' ' : '') + txt;
     render();
   };
-  recognition.onend = ()=>{ recognizing=false; dictadoTarget=null; render(); };
-  recognition.onerror = ()=>{ recognizing=false; dictadoTarget=null; render(); };
+  recognition.onend = ()=>{
+    if(!dictadoManualStop && state.currentDraft){
+      // el celular corta la sesión por su cuenta tras una pausa; la reiniciamos para que siga escuchando
+      try{ recognition.start(); return; }catch(e){}
+    }
+    recognizing=false; dictadoTarget=null; render();
+  };
+  recognition.onerror = (e)=>{
+    if(e.error === 'no-speech' || e.error === 'aborted'){ return; } // se resuelve solo en onend
+    recognizing=false; dictadoTarget=null; render();
+  };
   recognition.start();
   recognizing = true;
   dictadoTarget = campo;
@@ -628,7 +640,7 @@ function renderHome(m, bn){
 function renderNueva(m, bn){
   const d = state.currentDraft;
   m.innerHTML = `
-    <div class="back-link" onclick="state.screen='home'; state.currentDraft=null; render();">← Cancelar</div>
+    <div class="back-link" onclick="dictadoManualStop=true; if(recognizing) recognition.stop(); state.screen='home'; state.currentDraft=null; render();">← Cancelar</div>
     <div class="eyebrow">${fmtHora(d.hora)} · ${fmtFecha(d.hora)}</div>
     <h1 class="page">Nueva novedad</h1>
 
